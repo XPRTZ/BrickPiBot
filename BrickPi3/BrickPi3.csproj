@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>BrickPi .net Core implementation by Laurent Ellerbach:
+https://github.com/Ellerbach/iot</Description>
+    <Copyright>Laurent Ellerbach</Copyright>
+    <PackageLicenseExpression></PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/Ellerbach/iot/tree/master/src/devices/BrickPi3</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Ellerbach/iot/tree/master/src/devices/BrickPi3</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="BrickPi3.cs" />
+    <Compile Include="Models\*.cs" />
+    <Compile Include="Extensions\*.cs" />
+    <Compile Include="Movement\*.cs" />
+    <Compile Include="Sensors\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Device.Gpio" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>
