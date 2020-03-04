@@ -5,6 +5,7 @@
 using System;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 using Iot.Device.BrickPi3.Models;
 
 namespace Iot.Device.BrickPi3.Movement
@@ -56,10 +57,10 @@ namespace Iot.Device.BrickPi3.Movement
         /// <summary>
         /// Set the speed of the motor
         /// </summary>
-        /// <param name="speed">speed is between -255 and +255</param>
+        /// <param name="speed">speed is between -100 and +100</param>
         public void SetSpeed(int speed)
         {
-            speed = Math.Clamp(speed, -255, 255);
+            speed = Math.Clamp(speed, -100, 100);
             _brick.SetMotorPower((byte)Port, speed);
             OnPropertyChanged(nameof(Speed));
         }
@@ -88,6 +89,36 @@ namespace Iot.Device.BrickPi3.Movement
         public void Start()
         {
             _brick.SetMotorPower((byte)Port, Speed);
+        }
+
+        public void RunForDegrees(int degrees, int speed)
+        {
+            _brick.OffsetMotorEncoder((byte)Port, _brick.GetMotorEncoder((byte)Port));
+            
+            SetSpeed(speed);
+            _brick.SetMotorPower((byte)Port, Speed);
+            while(Math.Abs(_brick.GetMotorEncoder((byte)Port)) < degrees)
+            {
+                // wait
+            }
+            _brick.SetMotorPower((byte)Port, 0);
+        }
+
+        public async Task RunUntilBlock(int speed)
+        {
+            SetSpeed(speed);
+            
+            var currentTacho = _brick.GetMotorEncoder((byte)Port);
+            _brick.SetMotorPower((byte)Port, Speed);
+            await Task.Delay(50);
+            while(currentTacho != _brick.GetMotorEncoder((byte)Port))
+            {
+                if(speed > 0) Console.WriteLine("Up!");
+                else Console.WriteLine("Down!");
+                currentTacho = _brick.GetMotorEncoder((byte)Port);
+                await Task.Delay(50);
+            }
+            _brick.SetMotorPower((byte)Port, 0);
         }
 
         /// <summary>

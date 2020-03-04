@@ -8,6 +8,7 @@ using System.IO;
 using System.Threading;
 using Iot.Device.BrickPi3.Extensions;
 using Iot.Device.BrickPi3.Models;
+using Iot.Device.BrickPi3.Utils;
 
 namespace Iot.Device.BrickPi3.Sensors
 {
@@ -132,15 +133,6 @@ namespace Iot.Device.BrickPi3.Sensors
             {
                 return ReadAsString();
             }
-
-            internal set
-            {
-                if (_valueAsString != value)
-                {
-                    _valueAsString = value;
-                    OnPropertyChanged(nameof(ValueAsString));
-                }
-            }
         }
 
         /// <summary>
@@ -149,7 +141,7 @@ namespace Iot.Device.BrickPi3.Sensors
         public void UpdateSensor(object state)
         {
             Value = ReadRaw();
-            ValueAsString = ReadAsString();
+            
         }
 
         /// <summary>
@@ -229,12 +221,14 @@ namespace Iot.Device.BrickPi3.Sensors
         {
             try
             {
-                var ret = _brick.GetSensor((byte)Port);
+                var ret = _brick.GetSensor((byte)Port);                               
+
                 switch (_mode)
                 {
-                    case UltraSonicMode.Centimeter:
+                    case UltraSonicMode.Centimeter:                              
+                        return ByteUtils.ByteArrayToInt(ret);
                     case UltraSonicMode.Inch:
-                        return (ret[0] + (ret[1] >> 8));
+                        return ByteUtils.ByteArrayToInt(ret);
                     case UltraSonicMode.Listen:
                         return ret[0];
                 }

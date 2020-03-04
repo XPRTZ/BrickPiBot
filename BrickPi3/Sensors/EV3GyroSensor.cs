@@ -112,6 +112,12 @@ namespace Iot.Device.BrickPi3.Sensors
             }
         }
 
+        
+        public byte[] RawByte()
+        {
+            return _brick.GetSensor((byte)Port);
+        }
+
         /// <summary>
         /// Return the raw value  as a string of the sensor
         /// </summary>
@@ -120,15 +126,7 @@ namespace Iot.Device.BrickPi3.Sensors
             get
             {
                 return ReadAsString();
-            }
-            internal set
-            {
-                if (_valueAsString != value)
-                {
-                    _valueAsString = value;
-                    OnPropertyChanged(nameof(ValueAsString));
-                }
-            }
+            }            
         }
 
         /// <summary>
@@ -158,8 +156,7 @@ namespace Iot.Device.BrickPi3.Sensors
         /// </summary>
         public void UpdateSensor(object state)
         {
-            Value = ReadRaw();
-            ValueAsString = ReadAsString();
+            Value = ReadRaw();            
         }
 
         /// <summary>
@@ -265,7 +262,9 @@ namespace Iot.Device.BrickPi3.Sensors
             try
             {
                 var ret = _brick.GetSensor((byte)Port);
-                return (ret[0] + (ret[1] >> 8));
+                if (BitConverter.IsLittleEndian)
+                    Array.Reverse(ret);
+                return BitConverter.ToInt16(ret);
             }
             catch (Exception ex) when (ex is IOException)
             {

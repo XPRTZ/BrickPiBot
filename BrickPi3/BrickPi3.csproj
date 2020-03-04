@@ -22,6 +22,7 @@ https://github.com/Ellerbach/iot</Description>
     <Compile Include="Extensions\*.cs" />
     <Compile Include="Movement\*.cs" />
     <Compile Include="Sensors\*.cs" />
+    <Compile Include="Utils\*.cs" />
   </ItemGroup>
 
   <ItemGroup>

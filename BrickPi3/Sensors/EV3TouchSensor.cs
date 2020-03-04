@@ -112,15 +112,6 @@ namespace Iot.Device.BrickPi3.Sensors
             {
                 return ReadAsString();
             }
-
-            internal set
-            {
-                if (_valueAsString != value)
-                {
-                    _valueAsString = value;
-                    OnPropertyChanged(nameof(ValueAsString));
-                }
-            }
         }
 
         /// <summary>
@@ -128,8 +119,7 @@ namespace Iot.Device.BrickPi3.Sensors
         /// </summary>
         public void UpdateSensor(object state)
         {
-            Value = ReadRaw();
-            ValueAsString = ReadAsString();
+            Value = ReadRaw();            
         }
 
         /// <summary>

@@ -8,9 +8,26 @@ using System.IO;
 using System.Threading;
 using Iot.Device.BrickPi3.Extensions;
 using Iot.Device.BrickPi3.Models;
+using Iot.Device.BrickPi3.Utils;
 
 namespace Iot.Device.BrickPi3.Sensors
 {
+    public class RGBValues
+    {
+        public RGBValues(int red, int green, int blue, int ambient)
+        {
+            Red = red;
+            Green = green;
+            Blue = blue;
+            Ambient = ambient;
+        }
+
+        public int Red { get; }
+        public int Green { get; }
+        public int Blue { get; }
+        public int Ambient { get; }
+    }
+
     /// <summary>
     /// Create a EV3 Color sensor
     /// </summary>
@@ -163,9 +180,20 @@ namespace Iot.Device.BrickPi3.Sensors
             {
                 if (value != _value)
                 {
-                    _value = value;
-                    OnPropertyChanged(nameof(Value));
+                    if(Math.Abs(value - _value) > 1 || _colorMode == ColorSensorMode.Color)
+                    {
+                        _value = value;
+                        OnPropertyChanged(nameof(Value));
+                    }
                 }
+            }
+        }
+
+        public RGBValues RGBValues
+        {
+            get 
+            {
+                return ReadRGBValues();
             }
         }
 
@@ -177,16 +205,7 @@ namespace Iot.Device.BrickPi3.Sensors
             get
             {
                 return ReadAsString();
-            }
-
-            internal set
-            {
-                if (_valueAsString != value)
-                {
-                    _valueAsString = value;
-                    OnPropertyChanged(nameof(ValueAsString));
-                }
-            }
+            }            
         }
 
         /// <summary>
@@ -194,8 +213,7 @@ namespace Iot.Device.BrickPi3.Sensors
         /// </summary>
         public void UpdateSensor(object state)
         {
-            Value = ReadRaw();
-            ValueAsString = ReadAsString();
+            Value = ReadRaw();            
         }
 
         private void GetRawValues()
@@ -271,7 +289,7 @@ namespace Iot.Device.BrickPi3.Sensors
             return val;
         }
 
-        private int CalculateRawAverage()
+        public int CalculateRawAverage()
         {
             if (_colorMode == ColorSensorMode.Color)
             {
@@ -282,7 +300,8 @@ namespace Iot.Device.BrickPi3.Sensors
                 try
                 {
                     var ret = _brick.GetSensor((byte)Port);
-                    return (ret[0] + (ret[1] >> 8) + (ret[2] >> 16) + ret[3] >> 24) / 255 / 3;
+
+                    return (ret[5] << 8 + (ret[3] << 16) + (ret[1] << 24)) / 255 / 3;
                 }
                 catch (Exception ex) when (ex is IOException)
                 {
@@ -362,14 +381,31 @@ namespace Iot.Device.BrickPi3.Sensors
             return color;
         }
 
+        public byte[] ReadBytes()
+        {
+            return _brick.GetSensor((byte)Port);
+        }
+
         /// <summary>
         /// Reads the color of the RGB.
         /// </summary>
-        /// <returns>The RGB color.</returns>
+        /// <returns>The RGB values.</returns>
+        public RGBValues ReadRGBValues()
+        {
+            var bytes = _brick.GetSensor((byte)Port);         
+
+            return new RGBValues(ByteUtils.SliceByteArrayToInt(ref bytes, 0, 2), 
+                                 ByteUtils.SliceByteArrayToInt(ref bytes, 2, 2),
+                                 ByteUtils.SliceByteArrayToInt(ref bytes, 4, 2),
+                                 ByteUtils.SliceByteArrayToInt(ref bytes, 6, 2));     
+
+        }
+
         public RGBColor ReadRGBColor()
         {
-            GetRawValues();
-            return new RGBColor((byte)_rawValues[RedIndex], (byte)_rawValues[GreenIndex], (byte)_rawValues[BlueIndex]);
+            var bytes = _brick.GetSensor((byte)Port);  
+
+            return new RGBColor((byte)bytes[1], (byte)bytes[3], (byte)bytes[5]);  
         }
 
         private Color CalculateColor()
