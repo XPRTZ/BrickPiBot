@@ -106,15 +106,16 @@ namespace Iot.Device.BrickPi3.Movement
 
         public async Task RunUntilBlock(int speed)
         {
-            SetSpeed(speed);
-            
             var currentTacho = _brick.GetMotorEncoder((byte)Port);
+            await Task.Delay(50);
+
+
+            SetSpeed(speed);            
+            
             _brick.SetMotorPower((byte)Port, Speed);
             await Task.Delay(50);
             while(currentTacho != _brick.GetMotorEncoder((byte)Port))
             {
-                if(speed > 0) Console.WriteLine("Up!");
-                else Console.WriteLine("Down!");
                 currentTacho = _brick.GetMotorEncoder((byte)Port);
                 await Task.Delay(50);
             }

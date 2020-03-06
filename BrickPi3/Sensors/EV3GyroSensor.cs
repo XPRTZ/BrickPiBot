@@ -208,7 +208,7 @@ namespace Iot.Device.BrickPi3.Sensors
         /// <summary>
         /// Reset the sensor
         /// </summary>
-        private void Reset()
+        public void Reset()
         {
             if (Mode == GyroMode.Angle)
             {
