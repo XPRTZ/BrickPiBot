@@ -22,6 +22,7 @@ namespace BrickPiTest
         private EV3UltraSonicSensor _sonic;
         private EV3GyroSensor _gyro;
         private EV3TouchSensor _touch;
+        private EV3ColorSensor _color;
 
         public Program()
         {
@@ -38,9 +39,11 @@ namespace BrickPiTest
 
             prog.PrintInfo();
             
-            prog.Start();
+            //prog.Start();
 
             Console.ReadKey();
+
+            await prog.Stop();
 
             //_quitEvent.WaitOne();
 
@@ -63,12 +66,33 @@ namespace BrickPiTest
             Console.WriteLine($"Version: {_brick.BrickPi3Info.SoftwareVersion}");
         }
 
+        public async Task Stop()
+        {
+            Console.WriteLine("Stopping...");
+            // Smacker down
+            await _smackMotor.RunUntilBlock(-50);
+
+            await Task.Delay(250);
+
+            _leftMotor.SetSpeed(0);
+            _rightMotor.SetSpeed(0);
+        }
+
         public async Task Start()
         {
+            // smacker up...
+            await _smackMotor.RunUntilBlock(50);
+
+            _leftMotor.SetSpeed(30);
+            _rightMotor.SetSpeed(30);
+        }
+
+        public async Task StartTurn()
+        {/*
             _gyro.Reset();
             
             _leftMotor.SetSpeed(30);
-            _rightMotor.SetSpeed(-30);
+            _rightMotor.SetSpeed(30);
 
             while(Math.Abs(_gyro.Value) < 85)
             {
@@ -76,7 +100,7 @@ namespace BrickPiTest
             }
 
              _leftMotor.SetSpeed(0);
-             _rightMotor.SetSpeed(0);
+             _rightMotor.SetSpeed(0);*/
         }
 
         public async Task Setup()
@@ -86,8 +110,7 @@ namespace BrickPiTest
 
             // Set Smacker ;)
             _smackMotor = new Motor(_brick, Iot.Device.BrickPi3.Models.BrickPortMotor.PortB);
-            //_smackMotor.PropertyChanged += HandleTachoPropertyChangedEvent;
-            await _smackMotor.RunUntilBlock(50);
+            //_smackMotor.PropertyChanged += HandleTachoPropertyChangedEvent;            
 
             // Set ultrasonic
             _sonic = new EV3UltraSonicSensor(_brick, SensorPort.Port1, UltraSonicMode.Centimeter);
@@ -101,6 +124,82 @@ namespace BrickPiTest
             _gyro = new EV3GyroSensor(_brick, SensorPort.Port3);
             _gyro.Mode = GyroMode.Angle;
             //_gyro.PropertyChanged += HandleGyroMovementPropertyChangedEvent;
+
+            // Color
+            _color = new EV3ColorSensor(_brick, SensorPort.Port2, ColorSensorMode.Color, 20);
+            _color.PropertyChanged += HandleMovementColorPropertyChangedEvent;
+
+            // Touch
+            _touch = new EV3TouchSensor(_brick, SensorPort.Port4, 20);
+            _touch.PropertyChanged += HandleHit;
+        }
+
+        private bool _handlingHit = false;
+        private bool _robotStarted = false;
+        private async void HandleHit(object sender, PropertyChangedEventArgs e)
+        {
+            if(!_handlingHit && ((EV3TouchSensor) sender).IsPressed())
+            {
+                _handlingHit = true;
+
+                _robotStarted = !_robotStarted;
+
+                if(_robotStarted)
+                {
+                    await Start();
+                }
+                else
+                {
+                    Console.WriteLine("Stop! from HitHandler");
+                    await Stop();
+                }
+
+                _handlingHit = false;
+            }
+        }
+
+        private bool _handlingMovementColorEvent = false;
+        private async void HandleMovementColorPropertyChangedEvent(object sender, PropertyChangedEventArgs e)
+        {
+            var color = ((EV3ColorSensor)sender);
+            var deg = 0;
+
+            Console.WriteLine($"Color change! {color.Value}");
+
+            if(!_handlingMovementColorEvent && color.Value != ((int) Color.White))
+            {
+                _handlingMovementColorEvent = true;
+
+                Console.WriteLine("Stop! from movement color event handler");
+                await Stop();
+
+                if(_gyro.Value != 0)
+                {         
+                    Console.WriteLine($"Gyro: {_gyro.Value}, Reset...");       
+                    _gyro.Reset();
+                }
+                
+                await Task.Delay(250);
+
+                Console.WriteLine("Turn!");
+                _leftMotor.SetSpeed(30);
+                _rightMotor.SetSpeed(-30);
+
+                while(Math.Abs(_gyro.Value) < 175)
+                {
+                    deg = _gyro.Value;
+                    await Task.Delay(20);
+                }
+
+                _leftMotor.SetSpeed(30);
+                _rightMotor.SetSpeed(30);
+
+                _handlingMovementColorEvent = false;
+            }
+            else
+            {
+                Console.WriteLine($"Color change! {_handlingMovementColorEvent} :: {color.Value != ((int) Color.White)}");
+            }
         }
 
         private bool _handlingGyroTurnEvent = false;
@@ -112,7 +211,7 @@ namespace BrickPiTest
             {
                 _handlingGyroTurnEvent = true;
 
-                Console.WriteLine("Stop!");
+                Console.WriteLine("Stop! from gyro event handler");
                 _leftMotor.SetSpeed(0);
                 _rightMotor.SetSpeed(0);
 
@@ -127,6 +226,7 @@ namespace BrickPiTest
             Console.WriteLine($"{((EV3UltraSonicSensor)sender).Value}");
             if(!_handlingSonicSmackEvent && ((EV3UltraSonicSensor)sender).Value < 10)
             {
+                await Stop();
                 _handlingSonicSmackEvent = true;
                 Console.WriteLine("Smack!!");
                 await Smack();
@@ -158,14 +258,12 @@ namespace BrickPiTest
         }
 
         public async Task Smack()
-        {
-            var motor = new Motor(_brick, Iot.Device.BrickPi3.Models.BrickPortMotor.PortB);
-
-            await motor.RunUntilBlock(50);
+        { 
+            await _smackMotor.RunUntilBlock(50);
             await Task.Delay(100);
-            motor.SetSpeed(-50);
+            _smackMotor.SetSpeed(-50);
             await Task.Delay(200);
-            motor.SetSpeed(0);
+            _smackMotor.SetSpeed(0);
         }
 
         public  async Task TestTouch()
