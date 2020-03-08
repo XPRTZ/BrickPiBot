@@ -30,7 +30,7 @@ namespace Iot.Device.BrickPi3.Sensors
         /// <param name="brick">Interface to main Brick component</param>
         /// <param name="port">Sensor port</param>
         public EV3UltraSonicSensor(Brick brick, SensorPort port)
-            : this(brick, port, UltraSonicMode.Centimeter, 1000)
+            : this(brick, port, UltraSonicMode.Centimeter, 20)
         {
         }
 
